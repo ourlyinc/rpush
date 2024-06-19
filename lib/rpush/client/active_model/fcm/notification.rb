@@ -17,6 +17,7 @@ module Rpush
             base.instance_eval do
               validates :device_token, presence: true
               validates :priority, inclusion: { in: FCM_PRIORITIES }, allow_nil: true
+              validates :dry_run, inclusion: { in: [true, false] }
 
               validates_with Rpush::Client::ActiveModel::PayloadDataSizeValidator, limit: 4096
               validates_with Rpush::Client::ActiveModel::RegistrationIdsCountValidator, limit: 1000
@@ -44,20 +45,19 @@ module Rpush
             end
           end
 
-          def dry_run=(value)
-            fail ArgumentError, 'FCM does not support dry run' if value
-          end
-
           def as_json(options = nil) # rubocop:disable Metrics/PerceivedComplexity
             json = {
-              'data' => data,
-              'android' => android_config,
-              'apns' => apns_config,
-              'token' => device_token
+              'message' => {
+                'data' => data,
+                'android' => android_config,
+                'apns' => apns_config,
+                'token' => device_token
+              }
             }
 
-            json['notification'] = root_notification if notification
-            { 'message' => json }
+            json['message']['notification'] = root_notification if notification
+            json['validate_only'] = dry_run if dry_run
+            json
           end
 
           def android_config
