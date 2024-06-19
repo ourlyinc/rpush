@@ -5,7 +5,9 @@ module Rpush
         def initialize(app, delivery_class, _options = {})
           @app = app
           @delivery_class = delivery_class
-          @http = Net::HTTP::Persistent.new(name: 'rpush')
+          @http = Net::HTTP::Persistent.new(name: 'rpush').tap do |http|
+            http.debug_output = Rpush.config.logger if Rpush.config.log_level == ::Logger::Severity::DEBUG
+          end
         end
 
         def dispatch(payload)
